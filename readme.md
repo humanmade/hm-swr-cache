@@ -8,6 +8,11 @@ Note: As the cache is updated via a `wp_schedule_single_event()` call, using a s
 [Cavalcade](https://github.com/humanmade/Cavalcade) is recommended as the [default WordPress pseudo-cron](https://developer.wordpress.org/plugins/cron/) slows
 the page load running the scheduled event.
 
+## Requirements
+
+* PHP 8.1+ is supported (technically it might run on PHP 7.1+).
+* WordPress 6.4.2+ is supported (technically it might run on older versions, your experience is welcome).
+
 ## Installation
 
 Just install the plugin like any other plugin. Installation as a MU plugin is supported as well, and via composer
