@@ -1,0 +1,26 @@
+{
+	"name": "humanmade/hm-expiry-cache",
+	"description": "WordPress soft expiry cache plugin",
+	"license": "GPL-3.0-or-later",
+	"type": "wordpress-plugin",
+	"keywords": [
+		"cache",
+		"wordpress",
+		"expiry",
+		"soft-expiring-cache",
+		"background-updating",
+		"caching-strategy",
+		"cache-expiration",
+		"data-fetching",
+		"stale-data",
+		"low-latency"
+	],
+	"authors": [
+		{
+			"name": "Sander van Dragt",
+			"email": "sander@humanmade.com"
+		}
+	],
+	"homepage": "https://github.com/humanmade/hm-expiry-cache",
+	"minimum-stability": "stable"
+}
