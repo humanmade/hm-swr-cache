@@ -5,8 +5,7 @@ A soft expiring cache with background updating is a specialized caching strategy
 In a soft expiring cache, when the cache period expires, the cached data remains accessible while a background update operation occurs. During this time, the user or application continues to see the stale cached data until the new updated data is ready. This approach ensures data is always available for end consumers with minimized latency from cache rebuild, providing a continuously smooth experience.
 
 Note: As the cache is updated via a `wp_schedule_single_event()` call, using a scalable job system such as 
-[Cavalcade](https://github.com/humanmade/Cavalcade) is recommended as the [default WordPress pseudo-cron]
-(https://developer.wordpress.org/plugins/cron/) slows
+[Cavalcade](https://github.com/humanmade/Cavalcade) is recommended as the [default WordPress pseudo-cron](https://developer.wordpress.org/plugins/cron/) slows
 the page load running the scheduled event.
 
 ## Installation
