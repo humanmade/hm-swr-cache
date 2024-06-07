@@ -23,10 +23,10 @@ These commands configure Composer to use a custom Git repository for the `hm-exp
 ## Usage
 
 All that is needed is for you to create a callback function that will be called with `$callback_args` as the first 
-parameter by a scheduled task that is triggered when the cache after `$cache_expiry` seconds.
+parameter by a scheduled task that is triggered when the cache expires after `$cache_expiry` seconds.
 
 The following code goes where you need to use the cached data. On the first request the cache will be empty and 
-generated in the background, so you need to handle that event. After the first generation, there will either be 
+scheduled to be generated, so your implementation needs handle that event. After the first generation, there will either be 
 stale or current data to display:
 
 ```php
