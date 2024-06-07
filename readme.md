@@ -15,7 +15,7 @@ Just install the plugin like any other plugin. Installation as a MU plugin is su
 
 ```shell
 composer config repositories.hm-expiry-cache vcs git@github.com:humanmade/hm-expiry-cache.git
-composer require humanmade/hm-expiry-cache:dev-main --no-update
+composer require humanmade/hm-expiry-cache:^0.2 --no-update
 composer update humanmade/hm-expiry-cache --prefer-source
 ```
 
