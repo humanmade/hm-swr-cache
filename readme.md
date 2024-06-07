@@ -11,11 +11,15 @@ the page load running the scheduled event.
 
 ## Installation
 
-Just install the plugin like any other plugin. Installation as a MU plugin is supported as well, and via composer:
+Just install the plugin like any other plugin. Installation as a MU plugin is supported as well, and via composer
 
 ```shell
-
+composer config repositories.hm-expiry-cache vcs git@github.com:humanmade/hm-expiry-cache.git
+composer require humanmade/hm-expiry-cache:dev-main --no-update
+composer update humanmade/hm-expiry-cache --prefer-source
 ```
+
+These commands configure Composer to use a custom Git repository for the `hm-expiry-cache` package, add this package as a requirement without immediately installing it, and finally update and install the package from the source repository.
 
 ## Usage
 
