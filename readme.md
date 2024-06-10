@@ -58,8 +58,8 @@ function my_callback( array $args ) : WP_Error|array {
 	if ( ! isset( $args['url'] ) ) {
 		return new WP_Error( 'missing_arg', 'url' );
 	}
-	$data = example_api_request($args);
-	if ( failed_validation($data ) ) {
+	$data = example_api_request( $args );
+	if ( failed_validation( $data ) ) {
 		return new WP_Error( 'invalid_data', 'Data failed validation', $data );
 	}
 	return $data;
