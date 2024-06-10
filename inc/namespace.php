@@ -18,6 +18,8 @@
 
 namespace HM\SwrCache;
 
+use Closure;
+use InvalidArgumentException;
 use RuntimeException;
 
 const CRON_ACTION = 'hm.swrCache.cron';
@@ -101,15 +103,19 @@ function cache_is_warm( mixed $data, int $expiry_time ) : bool {
  * @param string   $cache_key The cache key to store the data.
  * @param string   $cache_group (optional) The cache group to store the data. Defaults to an empty string.
  *
+ * @throws InvalidArgumentException If a closure is provided as a callback.
  * @throws RuntimeException If an error occurs during the execution of the callback function.
  */
 function do_cron( string $lock_value, callable $callback, array $callback_args, int $expiry_duration, string $cache_key, string $cache_group = '' ) : void {
+    if ($callback instanceof Closure) {
+        throw new InvalidArgumentException("Closures are not allowed as callbacks.");
+    }
 	$lock_key = "lock_$cache_key";
 	if ( ! lock_verify( $lock_key, $lock_value, $cache_group ) ) {
 		// Another invocation already reserved this cron job.
 		return;
 	}
-	$data = $callback( $callback_args );
+  	$data = $callback( $callback_args );
 
 	if ( is_wp_error( $data ) ) {
 		throw new RuntimeException( $data->get_error_message(), $data->get_error_code() );
@@ -128,8 +134,14 @@ function do_cron( string $lock_value, callable $callback, array $callback_args, 
  * @param int      $cache_duration The duration of fresh cache content in seconds.
  *
  * @return mixed The cached data if available, or false if the data is not available in cache yet.
+ *
+ * @throws InvalidArgumentException If a closure is provided as a callback.
  */
 function get( string $cache_key, string $cache_group, callable $callback, array $callback_args, int $cache_duration ) : mixed {
+    if ($callback instanceof Closure) {
+        throw new InvalidArgumentException("Closures are not allowed as callbacks.");
+    }
+
 	[ $data, $expiry_timestamp ] = cache_get_with_expiry( $cache_key, $cache_group );
 
 	if ( cache_is_warm( $data, $expiry_timestamp ) ) {
