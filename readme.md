@@ -19,7 +19,7 @@ Just install the plugin like any other plugin. Installation as a MU plugin is su
 
 ```shell
 composer config repositories.hm-swr-cache vcs git@github.com:humanmade/hm-swr-cache.git
-composer require humanmade/hm-swr-cache:^0.2 --no-update
+composer require humanmade/hm-swr-cache:^0.3 --no-update
 composer update humanmade/hm-swr-cache --prefer-source
 ```
 
