@@ -1,6 +1,6 @@
 {
-	"name": "humanmade/hm-expiry-cache",
-	"description": "WordPress soft expiry cache plugin",
+	"name": "humanmade/hm-swr-cache",
+	"description": "WordPress stale-while-revalidate cache plugin",
 	"license": "GPL-3.0-or-later",
 	"type": "wordpress-plugin",
 	"keywords": [
@@ -13,6 +13,7 @@
 		"cache-expiration",
 		"data-fetching",
 		"stale-data",
+		"stale-while-revalidate",
 		"low-latency"
 	],
 	"authors": [
@@ -21,6 +22,6 @@
 			"email": "sander@humanmade.com"
 		}
 	],
-	"homepage": "https://github.com/humanmade/hm-expiry-cache",
+	"homepage": "https://github.com/humanmade/hm-swr-cache",
 	"minimum-stability": "stable"
 }

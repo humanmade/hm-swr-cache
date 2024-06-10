@@ -1,8 +1,8 @@
-# HM Expiry Cache
+# HM SWR Cache
 
 A soft expiring cache with background updating is a specialized caching strategy that allows cached data to remain available even after the expiration period. With regular caching, data becomes unavailable or leads to a 'cache miss' as soon as it expires. This can be costly, particularly with complex data fetching operations that require significant time.
 
-In a soft expiring cache, when the cache period expires, the cached data remains accessible while a background update operation occurs. During this time, the user or application continues to see the stale cached data until the new updated data is ready. This approach ensures data is always available for end consumers with minimized latency from cache rebuild, providing a continuously smooth experience.
+In a soft expiring cache, when the cache period expires, the cached data remains accessible while a background update operation occurs. During this time, the user or application continues to see the stale cached data until the new updated data is ready. This approach ensures data is always available for end consumers with minimized latency from cache rebuild, providing a continuously smooth experience. This is also called a `stale-while-revalidate` cache strategy, thus the name.
 
 Note: As the cache is updated via a `wp_schedule_single_event()` call, using a scalable job system such as 
 [Cavalcade](https://github.com/humanmade/Cavalcade) is recommended as the [default WordPress pseudo-cron](https://developer.wordpress.org/plugins/cron/) slows
@@ -18,12 +18,12 @@ the page load running the scheduled event.
 Just install the plugin like any other plugin. Installation as a MU plugin is supported as well, and via composer
 
 ```shell
-composer config repositories.hm-expiry-cache vcs git@github.com:humanmade/hm-expiry-cache.git
-composer require humanmade/hm-expiry-cache:^0.2 --no-update
-composer update humanmade/hm-expiry-cache --prefer-source
+composer config repositories.hm-swr-cache vcs git@github.com:humanmade/hm-swr-cache.git
+composer require humanmade/hm-swr-cache:^0.2 --no-update
+composer update humanmade/hm-swr-cache --prefer-source
 ```
 
-These commands configure Composer to use a custom Git repository for the `hm-expiry-cache` package, add this package as a requirement without immediately installing it, and finally update and install the package from the source repository.
+These commands configure Composer to use a custom Git repository for the `hm-swr-cache` package, add this package as a requirement without immediately installing it, and finally update and install the package from the source repository.
 
 ## Usage
 
@@ -36,7 +36,7 @@ stale or current data to display:
 
 ```php
 // false is returned if the data isn't in the cache yet
-$data = ExpiryCache\get(
+$data = SwrCache\get(
 	$cache_key,
 	$cache_group,
 	__NAMESPACE__ . '\\my_callback',
@@ -78,8 +78,7 @@ registrered for flushing using `register_cache_group( $cache_group )` before it 
 
 ## Difference with other plugins
 
-1. [WP-TLC-Transients](https://github.com/markjaquith/WP-TLC-Transients) In contrast to _WP-TLC-Transients_, _HM Expiry 
-   Cache_  is not hitting  the database in  any circumstance as  both the lock, cached data and cache expiry are all stored using `wp_cache` functions. The syntax is also quite different.
+1. [WP-TLC-Transients](https://github.com/markjaquith/WP-TLC-Transients) In contrast to _WP-TLC-Transients_, _HM Swr Cache_  is not hitting  the database in  any circumstance as  both the lock, cached data and cache expiry are all stored using `wp_cache` functions. The syntax is also quite different.
 
 
 I think that's it!

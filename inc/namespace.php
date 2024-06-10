@@ -7,8 +7,8 @@
  *
  * This allows frequent updating of the content without showing visitors uncached slow responses.
  *
- * The transient sets a unique lock value for every cache regeneration so that when the cache is cold it is only
- * regenerated once (race condition on long running regenerations)
+ * The plugin sets a unique lock value for every cache regeneration so that when the cache is cold it is only
+ * regenerated once (avoiding race conditions on long running regenerations)
  * the cache expiry key allows the key to expire without losing the cache contents
  * As a result then only on the very first request is there a wait for the content to be populated, from then onward
  * the cache is never empty and the page is always fast.
@@ -16,11 +16,11 @@
  * this is an editor requirement, or very conservative to conserve resources.
  */
 
-namespace HM\ExpiryCache;
+namespace HM\SwrCache;
 
 use RuntimeException;
 
-const CRON_ACTION = 'hm.expirycache.cron';
+const CRON_ACTION = 'hm.swrCache.cron';
 
 /**
  * Bootstrapping.
@@ -40,7 +40,7 @@ function bootstrap() : void {
  */
 function cache_delete_group( string $cache_group ) : bool {
 	// Requires cache group registration.
-	// @see \HM\ExpiryCache\register_cache_group
+	// @see \HM\SwrCache\register_cache_group
 	if ( function_exists( 'wp_cache_supports' ) && wp_cache_supports( 'flush_group' ) ) {
 			return wp_cache_flush_group( $cache_group );
 	}
