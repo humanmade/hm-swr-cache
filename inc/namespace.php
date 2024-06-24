@@ -23,6 +23,7 @@ use InvalidArgumentException;
 use RuntimeException;
 
 const CRON_ACTION = 'hm.swrCache.cron';
+const ALLOWED_CACHE_STORAGE = [ 'cache', 'option' ];
 
 /**
  * Bootstrapping.
@@ -30,7 +31,7 @@ const CRON_ACTION = 'hm.swrCache.cron';
  * @return void
  */
 function bootstrap() : void {
-	add_action( CRON_ACTION, __NAMESPACE__ . '\\do_cron', 10, 6 );
+	add_action( CRON_ACTION, __NAMESPACE__ . '\\do_cron', 10, 7 );
 }
 
 /**
@@ -57,8 +58,12 @@ function cache_delete_group( string $cache_group ) : bool {
  *
  * @return array An array containing the cached contents (or false) and its expiry timestamp.
  */
-function cache_get_with_expiry( string $cache_key, string $cache_group = '' ) : array {
-	$data = wp_cache_get( $cache_key, $cache_group );
+function cache_get_with_expiry( string $cache_key, string $cache_group = '', $cache_storage = 'cache' ) : array {
+	if ( $cache_storage === 'option') {
+		$data = get_option( $cache_group . '-' . $cache_key );
+	} else {
+		$data = wp_cache_get( $cache_key, $cache_group );
+	}
 	$expiry_timestamp = (int) wp_cache_get( $cache_key . '_expiry', $cache_group );
 
 	return [ $data, $expiry_timestamp ];
@@ -73,8 +78,12 @@ function cache_get_with_expiry( string $cache_key, string $cache_group = '' ) : 
  * @param string $cache_key The key for the cache.
  * @param string $cache_group Optional. The group for the cache. Default value is empty string.
  */
-function cache_set_with_expiry( string $lock_key, mixed $data, int $cache_duration, string $cache_key, string $cache_group = '' ) : void {
-	wp_cache_set( $cache_key, $data, $cache_group );
+function cache_set_with_expiry( string $lock_key, mixed $data, int $cache_duration, string $cache_key, string $cache_group = '', $cache_storage = 'cache' ) : void {
+	if ( $cache_storage === 'option') {
+		update_option( $cache_group . '-' . $cache_key, $data, false ); // Don't autoload.
+	} else {
+		wp_cache_set( $cache_key, $data, $cache_group );
+	}
 	wp_cache_set( $cache_key . '_expiry', time() + $cache_duration, $cache_group, $cache_duration );
 	wp_cache_delete( $lock_key, $cache_group );
 }
@@ -106,16 +115,21 @@ function cache_is_warm( mixed $data, int $expiry_time ) : bool {
  * @throws InvalidArgumentException If a closure is provided as a callback.
  * @throws RuntimeException If an error occurs during the execution of the callback function.
  */
-function do_cron( string $lock_value, callable $callback, array $callback_args, int $expiry_duration, string $cache_key, string $cache_group = '' ) : void {
-    if ($callback instanceof Closure) {
-        throw new InvalidArgumentException("Closures are not allowed as callbacks.");
-    }
+function do_cron( string $lock_value, callable $callback, array $callback_args, int $expiry_duration, string $cache_key, string $cache_group = '', $cache_storage  = 'cache' ) : void {
+	if ( $callback instanceof Closure ) {
+		throw new InvalidArgumentException("Closures are not allowed as callbacks.");
+	}
+
+	if ( ! in_array( $cache_storage, ALLOWED_CACHE_STORAGE, true ) ) {
+		throw new InvalidArgumentException( sprintf( 'Cache storage type not valid. Expected one of %s', implode( ', ', ALLOWED_CACHE_STORAGE ) ) );
+	}
+
 	$lock_key = "lock_$cache_key";
 	if ( ! lock_verify( $lock_key, $lock_value, $cache_group ) ) {
 		// Another invocation already reserved this cron job.
 		return;
 	}
-  	$data = $callback( $callback_args );
+	$data = $callback( $callback_args );
 
 	if ( is_wp_error( $data ) ) {
 		throw new RuntimeException( $data->get_error_message(), $data->get_error_code() );
@@ -132,17 +146,22 @@ function do_cron( string $lock_value, callable $callback, array $callback_args, 
  * @param callable $callback The callback function to fetch the data if not available in cache.
  * @param array    $callback_args The arguments to pass to the callback function.
  * @param int      $cache_duration The duration of fresh cache content in seconds.
+ * @param string   $cache_storage Where cache data is stored. Allowed values are 'cache' or 'options'.
  *
  * @return mixed The cached data if available, or false if the data is not available in cache yet.
  *
  * @throws InvalidArgumentException If a closure is provided as a callback.
  */
-function get( string $cache_key, string $cache_group, callable $callback, array $callback_args, int $cache_duration ) : mixed {
-    if ($callback instanceof Closure) {
-        throw new InvalidArgumentException("Closures are not allowed as callbacks.");
-    }
+function get( string $cache_key, string $cache_group, callable $callback, array $callback_args, int $cache_duration, string $cache_storage = 'cache' ) : mixed {
+	if ($callback instanceof Closure) {
+		throw new InvalidArgumentException( 'Closures are not allowed as callbacks.' );
+	}
 
-	[ $data, $expiry_timestamp ] = cache_get_with_expiry( $cache_key, $cache_group );
+	if ( ! in_array( $cache_storage, ALLOWED_CACHE_STORAGE, true ) ) {
+		throw new InvalidArgumentException( sprintf( 'Cache storage type not valid. Expected one of %s. %s given.', implode( ', ', ALLOWED_CACHE_STORAGE ), $cache_storage ) );
+	}
+
+	[ $data, $expiry_timestamp ] = cache_get_with_expiry( $cache_key, $cache_group, $cache_storage );
 
 	if ( cache_is_warm( $data, $expiry_timestamp ) ) {
 		// Cache is warm
