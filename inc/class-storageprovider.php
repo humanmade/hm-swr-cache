@@ -96,9 +96,9 @@ abstract class StorageProvider {
 	/**
 	 * Registers a cache group for flushing.
 	 *
-	 * @param string $cache_group The cache group to be registered.
+	 * @param string $group The cache group to be registered.
 	 *
 	 * @return bool Whether the cache group was successfully registered.
 	 */
-	abstract public function register_cache_group( string $cache_group ) : bool;
+	abstract public function register_group( string $group ) : bool;
 }

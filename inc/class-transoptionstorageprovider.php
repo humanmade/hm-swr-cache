@@ -7,7 +7,7 @@ namespace HM\SwrCache;
  */
 class TransoptionStorageProvider extends StorageProvider {
 
-	private array $registered_cache_groups = [];
+	private array $registered_groups = [];
 	/**
 	 * Deletes a cache group and allows for immediate regeneration.
 	 *
@@ -21,7 +21,7 @@ class TransoptionStorageProvider extends StorageProvider {
 		global $wpdb;
 
 		// cache groups must be registered first.
-		if ( ! isset( $this->registered_cache_groups[ $cache_group ] ) ) {
+		if ( ! isset( $this->registered_groups[ $cache_group ] ) ) {
 			return false;
 		}
 
@@ -40,12 +40,12 @@ class TransoptionStorageProvider extends StorageProvider {
 		/**
 		 * Registers a cache group for flushing.
 		 *
-		 * @param string $cache_group The cache group to be registered.
+		 * @param string $group The cache group to be registered.
 		 *
 		 * @return bool Whether the cache group was successfully registered.
 		 */
-	public function register_cache_group( string $cache_group ) : bool {
-		$this->registered_cache_groups[ $cache_group ] = $cache_group;
+	public function register_group( string $group ) : bool {
+		$this->registered_groups[ $group ] = $group;
 		return true;
 	}
 

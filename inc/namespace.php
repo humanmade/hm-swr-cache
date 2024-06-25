@@ -147,5 +147,5 @@ function get( string $cache_key, string $cache_group, callable $callback, array 
 function register_cache_group( string $cache_group ) : bool {
 	global $storage;
 
-	return $storage->register_cache_group( $cache_group );
+	return $storage->register_group( $cache_group );
 }

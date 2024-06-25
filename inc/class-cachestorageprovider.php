@@ -91,17 +91,17 @@ class CacheStorageProvider extends StorageProvider {
 	/**
 	 * Registers a cache group for flushing.
 	 *
-	 * @param string $cache_group The cache group to be registered.
+	 * @param string $group The cache group to be registered.
 	 *
 	 * @return bool Whether the cache group was successfully registered.
 	 */
-	public function register_cache_group( string $cache_group ) : bool {
+	public function register_group( string $group ) : bool {
 		global $wp_object_cache;
 		if ( function_exists( 'wp_cache_add_redis_hash_groups' ) ) {
 			// Enable cache group flushing for this group
-			wp_cache_add_redis_hash_groups( $cache_group );
+			wp_cache_add_redis_hash_groups( $group );
 
-			return $wp_object_cache && isset( $wp_object_cache->redis_hash_groups[ $cache_group ] );
+			return $wp_object_cache && isset( $wp_object_cache->redis_hash_groups[ $group ] );
 		}
 
 		return false;
