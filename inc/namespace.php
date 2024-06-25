@@ -23,7 +23,10 @@ use InvalidArgumentException;
 use RuntimeException;
 
 const CRON_ACTION = 'hm.swrCache.cron';
-const ALLOWED_CACHE_STORAGE = [ 'cache', 'option' ];
+const ALLOWED_CACHE_STORAGE = [ StorageProvider::CACHE, StorageProvider::OPTION ];
+
+/** @var StorageProvider $storage */
+$storage = null;
 
 /**
  * Bootstrapping.
@@ -31,7 +34,11 @@ const ALLOWED_CACHE_STORAGE = [ 'cache', 'option' ];
  * @return void
  */
 function bootstrap() : void {
+	global $storage;
 	add_action( CRON_ACTION, __NAMESPACE__ . '\\do_cron', 10, 7 );
+
+	$storage_type = apply_filters( 'hm_swrcache_storagetype', StorageProvider::CACHE );
+	$storage = StorageProvider::getInstance( $storage_type );
 }
 
 /**
@@ -42,12 +49,9 @@ function bootstrap() : void {
  * @return bool Whether the cache group was successfully deleted.
  */
 function cache_delete_group( string $cache_group ) : bool {
-	// Requires cache group registration.
-	// @see \HM\SwrCache\register_cache_group
-	if ( function_exists( 'wp_cache_supports' ) && wp_cache_supports( 'flush_group' ) ) {
-			return wp_cache_flush_group( $cache_group );
-	}
-	return false;
+	global $storage;
+
+	return $storage->delete_group( $cache_group );
 }
 
 /**
@@ -58,15 +62,10 @@ function cache_delete_group( string $cache_group ) : bool {
  *
  * @return array An array containing the cached contents (or false) and its expiry timestamp.
  */
-function cache_get_with_expiry( string $cache_key, string $cache_group = '', $cache_storage = 'cache' ) : array {
-	if ( $cache_storage === 'option') {
-		$data = get_option( $cache_group . '-' . $cache_key );
-	} else {
-		$data = wp_cache_get( $cache_key, $cache_group );
-	}
-	$expiry_timestamp = (int) wp_cache_get( $cache_key . '_expiry', $cache_group );
+function cache_get_with_expiry( string $cache_key, string $cache_group = '' ) : array {
+	global $storage;
 
-	return [ $data, $expiry_timestamp ];
+	return $storage->get_with_expiry( $cache_key, $cache_group );
 }
 
 /**
@@ -78,14 +77,9 @@ function cache_get_with_expiry( string $cache_key, string $cache_group = '', $ca
  * @param string $cache_key The key for the cache.
  * @param string $cache_group Optional. The group for the cache. Default value is empty string.
  */
-function cache_set_with_expiry( string $lock_key, mixed $data, int $cache_duration, string $cache_key, string $cache_group = '', $cache_storage = 'cache' ) : void {
-	if ( $cache_storage === 'option') {
-		update_option( $cache_group . '-' . $cache_key, $data, false ); // Don't autoload.
-	} else {
-		wp_cache_set( $cache_key, $data, $cache_group );
-	}
-	wp_cache_set( $cache_key . '_expiry', time() + $cache_duration, $cache_group, $cache_duration );
-	wp_cache_delete( $lock_key, $cache_group );
+function cache_set_with_expiry( string $lock_key, mixed $data, int $cache_duration, string $cache_key, string $cache_group = '' ) : void {
+	global $storage;
+	$storage->set_with_expiry( $lock_key, $data, $cache_duration, $cache_key, $cache_group );
 }
 
 /**
@@ -115,9 +109,9 @@ function cache_is_warm( mixed $data, int $expiry_time ) : bool {
  * @throws InvalidArgumentException If a closure is provided as a callback.
  * @throws RuntimeException If an error occurs during the execution of the callback function.
  */
-function do_cron( string $lock_value, callable $callback, array $callback_args, int $expiry_duration, string $cache_key, string $cache_group = '', $cache_storage  = 'cache' ) : void {
+function do_cron( string $lock_value, callable $callback, array $callback_args, int $expiry_duration, string $cache_key, string $cache_group = '', $cache_storage = 'cache' ) : void {
 	if ( $callback instanceof Closure ) {
-		throw new InvalidArgumentException("Closures are not allowed as callbacks.");
+		throw new InvalidArgumentException( 'Closures are not allowed as callbacks.' );
 	}
 
 	if ( ! in_array( $cache_storage, ALLOWED_CACHE_STORAGE, true ) ) {
@@ -153,7 +147,7 @@ function do_cron( string $lock_value, callable $callback, array $callback_args, 
  * @throws InvalidArgumentException If a closure is provided as a callback.
  */
 function get( string $cache_key, string $cache_group, callable $callback, array $callback_args, int $cache_duration, string $cache_storage = 'cache' ) : mixed {
-	if ($callback instanceof Closure) {
+	if ( $callback instanceof Closure ) {
 		throw new InvalidArgumentException( 'Closures are not allowed as callbacks.' );
 	}
 
@@ -161,7 +155,7 @@ function get( string $cache_key, string $cache_group, callable $callback, array 
 		throw new InvalidArgumentException( sprintf( 'Cache storage type not valid. Expected one of %s. %s given.', implode( ', ', ALLOWED_CACHE_STORAGE ), $cache_storage ) );
 	}
 
-	[ $data, $expiry_timestamp ] = cache_get_with_expiry( $cache_key, $cache_group, $cache_storage );
+	[ $data, $expiry_timestamp ] = cache_get_with_expiry( $cache_key, $cache_group );
 
 	if ( cache_is_warm( $data, $expiry_timestamp ) ) {
 		// Cache is warm
@@ -192,11 +186,9 @@ function get( string $cache_key, string $cache_group, callable $callback, array 
  * @return string The generated lock value, unique per invocation, regardless whether the lock is added.
  */
 function lock_add( string $lock_key, string $cache_group = '', int $lock_time = MINUTE_IN_SECONDS ) : string {
-	$lock_value = wp_generate_uuid4();
-	// Add will fail if it already exists.
-	wp_cache_add( $lock_key, $lock_value, $cache_group, $lock_time );
+	global $storage;
 
-	return $lock_value;
+	return $storage->lock_add( $lock_key, $cache_group, $lock_time );
 }
 
 /**
@@ -227,7 +219,9 @@ function register_cache_group( string $cache_group ) {
 	if ( function_exists( 'wp_cache_add_redis_hash_groups' ) ) {
 		// Enable cache group flushing for this group
 		wp_cache_add_redis_hash_groups( $cache_group );
+
 		return $wp_object_cache && isset( $wp_object_cache->redis_hash_groups[ $cache_group ] );
 	}
+
 	return false;
 }
