@@ -71,4 +71,39 @@ class CacheStorageProvider extends StorageProvider {
 
 		return $lock_value;
 	}
+
+	/**
+	 * Verifies the lock against the cached lock.
+	 *
+	 * @param string $lock_key The transient key used to lock the group.
+	 * @param string $lock_value The lock value to be verified.
+	 * @param string $cache_group The cache group in which the lock value is stored. Default is an empty string.
+	 *
+	 * @return bool Whether the lock value matches the cached lock value in the cache group.
+	 */
+	function lock_verify( string $lock_key, string $lock_value, string $cache_group = '' ) : bool {
+		$found = null;
+		$cached_lock = wp_cache_get( $lock_key, $cache_group, false, $found );
+
+		return $found && $cached_lock === $lock_value;
+	}
+
+	/**
+	 * Registers a cache group for flushing.
+	 *
+	 * @param string $cache_group The cache group to be registered.
+	 *
+	 * @return bool Whether the cache group was successfully registered.
+	 */
+	public function register_cache_group( string $cache_group ) : bool {
+		global $wp_object_cache;
+		if ( function_exists( 'wp_cache_add_redis_hash_groups' ) ) {
+			// Enable cache group flushing for this group
+			wp_cache_add_redis_hash_groups( $cache_group );
+
+			return $wp_object_cache && isset( $wp_object_cache->redis_hash_groups[ $cache_group ] );
+		}
+
+		return false;
+	}
 }

@@ -5,7 +5,9 @@ namespace HM\SwrCache;
 /**
  * Option groups do not exists so we're using a prefix.
  */
-class OptionStorageProvider extends StorageProvider {
+class TransoptionStorageProvider extends StorageProvider {
+
+	private array $registered_cache_groups = [];
 	/**
 	 * Deletes a cache group and allows for immediate regeneration.
 	 *
@@ -16,7 +18,35 @@ class OptionStorageProvider extends StorageProvider {
 	public function delete_group( string $cache_group ) : bool {
 		// Option groups do not exist
 		// TODO: Do a database search for all options with a prefix?
-		return false;
+		global $wpdb;
+
+		// cache groups must be registered first.
+		if ( ! isset( $this->registered_cache_groups[ $cache_group ] ) ) {
+			return false;
+		}
+
+		$cache_group = $this->dashit( $cache_group );
+		$affected = 0;
+		// Deleting all options and transients with shared group name
+		$affected += (int) $wpdb->query(
+			$wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", "$cache_group%" )
+		);
+		$affected += (int) $wpdb->query(
+			$wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", "_transient_$cache_group%" )
+		);
+		return $affected > 0;
+	}
+
+		/**
+		 * Registers a cache group for flushing.
+		 *
+		 * @param string $cache_group The cache group to be registered.
+		 *
+		 * @return bool Whether the cache group was successfully registered.
+		 */
+	public function register_cache_group( string $cache_group ) : bool {
+		$this->registered_cache_groups[ $cache_group ] = $cache_group;
+		return true;
 	}
 
 	/**
@@ -76,6 +106,22 @@ class OptionStorageProvider extends StorageProvider {
 		$this->add_transient( $lock_key, $lock_value, $cache_group, $lock_time );
 
 		return $lock_value;
+	}
+
+	/**
+	 * Verifies the lock against the cached lock.
+	 *
+	 * @param string $lock_key The transient key used to lock the group.
+	 * @param string $lock_value The lock value to be verified.
+	 * @param string $cache_group The cache group in which the lock value is stored. Default is an empty string.
+	 *
+	 * @return bool Whether the lock value matches the cached lock value in the cache group.
+	 */
+	function lock_verify( string $lock_key, string $lock_value, string $cache_group = '' ) : bool {
+		$cached_lock = get_transient( $this->dashit( $cache_group ) . $lock_key );
+		$found = $cached_lock !== false;
+
+		return $found && $cached_lock === $lock_value;
 	}
 
 	/**
