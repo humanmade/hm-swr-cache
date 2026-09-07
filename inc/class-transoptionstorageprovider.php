@@ -58,7 +58,7 @@ class TransoptionStorageProvider extends StorageProvider {
 	 */
 	public function get_with_expiry( string $cache_key, string $cache_group = '' ) : array {
 		$data = get_option( $this->dashit( $cache_group ) . $cache_key );
-		$expiry_timestamp = (int) get_transient( $this->dashit( $cache_group ) . $cache_key . '_expiry' );
+		$expiry_timestamp = (int) get_option( $this->dashit( $cache_group ) . $cache_key . '_expiry' );
 
 		return [ $data, $expiry_timestamp ];
 	}
@@ -85,7 +85,7 @@ class TransoptionStorageProvider extends StorageProvider {
 	 */
 	public function set_with_expiry( string $lock_key, mixed $data, int $cache_duration, string $cache_key, string $cache_group = '' ) : void {
 		update_option( $this->dashit( $cache_group ) . $cache_key, $data, false ); // Don't autoload.
-		set_transient( $this->dashit( $cache_group ) . $cache_key . '_expiry', time() + $cache_duration, $cache_duration );
+		update_option( $this->dashit( $cache_group ) . $cache_key . '_expiry', time() + $cache_duration, false );
 		delete_transient( $this->dashit( $cache_group ) . $lock_key );
 	}
 

@@ -37,13 +37,22 @@ class TransoptionStorageProviderTest extends TestCase {
 		parent::tearDown();
 	}
 
-	public function testGetWithExpiryReadsExpiryFromTransient() : void {
-		Functions\when( 'get_option' )->justReturn( 'data' );
-		Functions\expect( 'get_transient' )->once()->with( 'grp-key_expiry' )->andReturn( 12345 );
+	public function testGetWithExpiryReadsExpiryFromOption() : void {
+		Functions\expect( 'get_option' )->once()->with( 'grp-key' )->andReturn( 'data' );
+		Functions\expect( 'get_option' )->once()->with( 'grp-key_expiry' )->andReturn( '12345' );
 
 		$provider = new TransoptionStorageProvider();
 
 		$this->assertSame( [ 'data', 12345 ], $provider->get_with_expiry( 'key', 'grp' ) );
+	}
+
+	public function testSetWithExpiryStoresExpiryInOptionAndLockInTransient() : void {
+		Functions\expect( 'update_option' )->once()->with( 'grp-key', 'data', false );
+		Functions\expect( 'update_option' )->once()->with( 'grp-key_expiry', Mockery::on( fn( $t ) => $t >= time() + 100 ), false );
+		Functions\expect( 'delete_transient' )->once()->with( 'grp-lock_key' );
+		Functions\expect( 'set_transient' )->never();
+
+		( new TransoptionStorageProvider() )->set_with_expiry( 'lock_key', 'data', 100, 'key', 'grp' );
 	}
 
 	public function testDeleteGroupRefusesEmptyGroup() : void {

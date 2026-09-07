@@ -79,8 +79,8 @@ instead:
 add_filter( 'hm.swrCache.storage', fn() => HM\SwrCache\StorageProvider::TRANSOPTION );
 ```
 
-Add the filter in an MU plugin, because the storage is chosen when the plugin loads. The expiry and lock still use
-transients, so after a flush the data is served stale until the next scheduled regeneration.
+Add the filter in an MU plugin, because the storage is chosen when the plugin loads. Data and expiry are options,
+so both survive a flush. Only the short-lived lock is a transient.
 
 ## Flushing the cache
 
