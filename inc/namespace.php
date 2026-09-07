@@ -32,7 +32,12 @@ function bootstrap() : void {
 	global $storage;
 
 	add_action( CRON_ACTION, __NAMESPACE__ . '\\do_cron', 10, 7 );
-	$storage = StorageProvider::get_instance( StorageProvider::CACHE );
+	/**
+	 * Filters which storage backend holds the cached data.
+	 *
+	 * @param string $provider_type StorageProvider::CACHE (default) or StorageProvider::TRANSOPTION.
+	 */
+	$storage = StorageProvider::get_instance( apply_filters( 'hm.swrCache.storage', StorageProvider::CACHE ) );
 }
 
 /**
