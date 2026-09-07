@@ -29,15 +29,30 @@ const CRON_ACTION = 'hm.swrCache.cron';
  * @return void
  */
 function bootstrap() : void {
-	global $storage;
-
 	add_action( CRON_ACTION, __NAMESPACE__ . '\\do_cron', 10, 7 );
-	/**
-	 * Filters which storage backend holds the cached data.
-	 *
-	 * @param string $provider_type StorageProvider::CACHE (default) or StorageProvider::TRANSOPTION.
-	 */
-	$storage = StorageProvider::get_instance( apply_filters( 'hm.swrCache.storage', StorageProvider::CACHE ) );
+	storage( true );
+}
+
+/**
+ * Returns the storage provider holding the cached data.
+ *
+ * @param bool $reset Re-run the storage filter instead of reusing the current provider.
+ *
+ * @return StorageProvider
+ */
+function storage( bool $reset = false ) : StorageProvider {
+	static $storage = null;
+
+	if ( $reset || $storage === null ) {
+		/**
+		 * Filters which storage backend holds the cached data.
+		 *
+		 * @param string $provider_type StorageProvider::CACHE (default) or StorageProvider::TRANSOPTION.
+		 */
+		$storage = StorageProvider::get_instance( apply_filters( 'hm.swrCache.storage', StorageProvider::CACHE ) );
+	}
+
+	return $storage;
 }
 
 /**
@@ -48,9 +63,7 @@ function bootstrap() : void {
  * @return bool Whether the cache group was successfully deleted.
  */
 function cache_delete_group( string $cache_group ) : bool {
-	global $storage;
-
-	return $storage->delete_group( $cache_group );
+	return storage()->delete_group( $cache_group );
 }
 
 
@@ -82,14 +95,12 @@ function cache_is_warm( mixed $data, int $expiry_time ) : bool {
  * @throws RuntimeException If an error occurs during the execution of the callback function.
  */
 function do_cron( string $lock_value, callable $callback, array $callback_args, int $expiry_duration, string $cache_key, string $cache_group = '') : void {
-	global $storage;
-
 	if ( $callback instanceof Closure ) {
 		throw new InvalidArgumentException( 'Closures are not allowed as callbacks.' );
 	}
 
 	$lock_key = "lock_$cache_key";
-	if ( ! $storage->lock_verify( $lock_key, $lock_value, $cache_group ) ) {
+	if ( ! storage()->lock_verify( $lock_key, $lock_value, $cache_group ) ) {
 		// Another invocation already reserved this cron job.
 		return;
 	}
@@ -99,7 +110,7 @@ function do_cron( string $lock_value, callable $callback, array $callback_args, 
 		throw new RuntimeException( $data->get_error_message(), $data->get_error_code() );
 	}
 
-	$storage->set_with_expiry( $lock_key, $data, $expiry_duration, $cache_key, $cache_group );
+	storage()->set_with_expiry( $lock_key, $data, $expiry_duration, $cache_key, $cache_group );
 }
 
 /**
@@ -116,13 +127,11 @@ function do_cron( string $lock_value, callable $callback, array $callback_args, 
  * @throws InvalidArgumentException If a closure is provided as a callback.
  */
 function get( string $cache_key, string $cache_group, callable $callback, array $callback_args, int $cache_duration ) : mixed {
-	global $storage;
-
 	if ( $callback instanceof Closure ) {
 		throw new InvalidArgumentException( 'Closures are not allowed as callbacks.' );
 	}
 
-	[ $data, $expiry_timestamp ] = $storage->get_with_expiry( $cache_key, $cache_group );
+	[ $data, $expiry_timestamp ] = storage()->get_with_expiry( $cache_key, $cache_group );
 
 	if ( cache_is_warm( $data, $expiry_timestamp ) ) {
 		// Cache is warm
@@ -130,7 +139,7 @@ function get( string $cache_key, string $cache_group, callable $callback, array 
 	}
 
 	wp_schedule_single_event( time(), CRON_ACTION, [
-		$storage->lock_add( "lock_$cache_key", $cache_group ),
+		storage()->lock_add( "lock_$cache_key", $cache_group ),
 		$callback,
 		$callback_args,
 		$cache_duration,
@@ -150,7 +159,5 @@ function get( string $cache_key, string $cache_group, callable $callback, array 
  * @return bool Whether the cache group was successfully registered.
  */
 function register_cache_group( string $cache_group ) : bool {
-	global $storage;
-
-	return $storage->register_group( $cache_group );
+	return storage()->register_group( $cache_group );
 }

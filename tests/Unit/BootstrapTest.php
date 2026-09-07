@@ -13,6 +13,7 @@ use HM\SwrCache\TransoptionStorageProvider;
 use PHPUnit\Framework\TestCase;
 
 use function HM\SwrCache\bootstrap;
+use function HM\SwrCache\storage;
 
 class BootstrapTest extends TestCase {
 
@@ -30,7 +31,8 @@ class BootstrapTest extends TestCase {
 	public function testBootstrapDefaultsToCacheStorage() : void {
 		bootstrap();
 
-		$this->assertInstanceOf( CacheStorageProvider::class, $GLOBALS['storage'] );
+		$this->assertInstanceOf( CacheStorageProvider::class, storage() );
+		$this->assertArrayNotHasKey( 'storage', $GLOBALS );
 	}
 
 	public function testBootstrapStorageIsFilterable() : void {
@@ -38,6 +40,6 @@ class BootstrapTest extends TestCase {
 
 		bootstrap();
 
-		$this->assertInstanceOf( TransoptionStorageProvider::class, $GLOBALS['storage'] );
+		$this->assertInstanceOf( TransoptionStorageProvider::class, storage() );
 	}
 }
