@@ -72,15 +72,13 @@ conditions. If, for whatever reason (for example due to a fatal error) the callb
 
 ## Storing the cache in options
 
-By default, cached data lives in the object cache. To keep it after an object cache flush, store it in options
-instead:
+By default, cached data lives in the object cache. To keep it after an object cache flush, store it in options instead:
 
 ```php
 add_filter( 'hm.swrCache.storage', fn() => HM\SwrCache\StorageProvider::TRANSOPTION );
 ```
 
-Add the filter in an MU plugin, because the storage is chosen when the plugin loads. Data and expiry are options,
-so both survive a flush. Only the short-lived lock is a transient.
+Add the filter in an MU plugin, because the storage is chosen when the plugin loads. Data and expiry are options, so both survive a flush. Only the short-lived lock is a transient.
 
 ## Flushing the cache
 
