@@ -14,8 +14,8 @@ abstract class StorageProvider {
 	public const CACHE = CacheStorageProvider::class;
 	public const TRANSOPTION = TransoptionStorageProvider::class;
 	private const ALLOWED_CACHE_STORAGE = [ StorageProvider::CACHE, StorageProvider::TRANSOPTION ];
-	/** @var StorageProvider */
-	private static StorageProvider $instance;
+	/** @var StorageProvider[] Keyed by class name. */
+	private static array $instances = [];
 
 	/**
 	 * Retrieves an instance of the cache provider based on the provider type.
@@ -26,7 +26,7 @@ abstract class StorageProvider {
 	 * @throws InvalidArgumentException If the given provider type is not a valid class or cache storage type.
 	 */
 	public static function get_instance( string $provider_type ) : self {
-		if ( ! isset( self::$instance ) || self::$instance === null ) {
+		if ( ! isset( self::$instances[ $provider_type ] ) ) {
 			if ( ! class_exists( $provider_type ) ) {
 				throw new InvalidArgumentException( "Class '$provider_type' does not exist" );
 			}
@@ -34,10 +34,10 @@ abstract class StorageProvider {
 			if ( ! in_array( $provider_type, self::ALLOWED_CACHE_STORAGE, true ) ) {
 				throw new InvalidArgumentException( sprintf( 'Cache storage type not valid. Expected one of %s', implode( ', ', self::ALLOWED_CACHE_STORAGE ) ) );
 			}
-			self::$instance = new $provider_type;
+			self::$instances[ $provider_type ] = new $provider_type;
 		}
 
-		return self::$instance;
+		return self::$instances[ $provider_type ];
 	}
 
 	/**

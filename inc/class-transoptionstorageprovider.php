@@ -20,20 +20,19 @@ class TransoptionStorageProvider extends StorageProvider {
 		// TODO: Do a database search for all options with a prefix?
 		global $wpdb;
 
-		// cache groups must be registered first.
-		if ( ! isset( $this->registered_groups[ $cache_group ] ) ) {
+		// cache groups must be registered first. An empty group has no prefix, so it can't be flushed.
+		if ( $cache_group === '' || ! isset( $this->registered_groups[ $cache_group ] ) ) {
 			return false;
 		}
 
-		$cache_group = $this->dashit( $cache_group );
+		$prefix = $wpdb->esc_like( $this->dashit( $cache_group ) );
 		$affected = 0;
-		// Deleting all options and transients with shared group name
-		$affected += (int) $wpdb->query(
-			$wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", "$cache_group%" )
-		);
-		$affected += (int) $wpdb->query(
-			$wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", "_transient_$cache_group%" )
-		);
+		// Deleting all options and transients (values and timeouts) with shared group name
+		foreach ( [ '', '_transient_', '_transient_timeout_' ] as $option_prefix ) {
+			$affected += (int) $wpdb->query(
+				$wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( $option_prefix ) . $prefix . '%' )
+			);
+		}
 		return $affected > 0;
 	}
 
@@ -59,7 +58,7 @@ class TransoptionStorageProvider extends StorageProvider {
 	 */
 	public function get_with_expiry( string $cache_key, string $cache_group = '' ) : array {
 		$data = get_option( $this->dashit( $cache_group ) . $cache_key );
-		$expiry_timestamp = (int) get_option( $this->dashit( $cache_group ) . $cache_key . '_expiry' );
+		$expiry_timestamp = (int) get_transient( $this->dashit( $cache_group ) . $cache_key . '_expiry' );
 
 		return [ $data, $expiry_timestamp ];
 	}
