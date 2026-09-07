@@ -70,6 +70,16 @@ function my_callback( array $args ) : WP_Error|array {
 Internally a self-expiring and self-managed lock system ensures the callback is just processed once, avoiding race 
 conditions. If, for whatever reason (for example due to a fatal error) the callback doesn't complete, then the lock self-expires in 1 minute.
 
+## Storing the cache in options
+
+By default, cached data lives in the object cache. To keep it after an object cache flush, store it in options instead:
+
+```php
+add_filter( 'hm.swrCache.storage', fn() => HM\SwrCache\StorageProvider::TRANSOPTION );
+```
+
+Add the filter in an MU plugin, because the storage is chosen when the plugin loads. Data and expiry are options, so both survive a flush. Only the short-lived lock is a transient.
+
 ## Flushing the cache
 
 Engineers can clear the cache as well as any locks by calling the `cache_delete_group( $cache_group )` function, 
